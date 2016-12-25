@@ -1,5 +1,5 @@
 # T_T
-TextureTranscoder......Transcode kinds of annoying texture data to GPU support format real-time.
+Texture_Transcoder......Transcode kinds of annoying texture data to GPU support format real-time.
 
 So many mobile-device support compress texture format:
           
