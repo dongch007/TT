@@ -4,7 +4,7 @@ TextureTranscoder......Transcode kinds of annoying texture data to GPU support f
 So many mobile-device support compress texture format:
           
           Tegra/Vivante-—----DXTC
-          Adreno-------------ATC
+          Adreno-------------ATC
           PowerVR------------PVRTC
           GLES3--------------ETC2/ASTC
           GLES2--------------ETC1
