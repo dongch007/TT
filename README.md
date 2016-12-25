@@ -1,9 +1,9 @@
 # T_T
 TextureTranscoder......Transcode kinds of annoying texture data to GPU support format real-time.
 
-So many mobile-device support compress texture format.
-
-          Tegra/Vivante-—----DXTC
+So many mobile-device support compress texture format:
+          
+          Tegra/Vivante-—----DXTC
           Adreno-------------ATC
           PowerVR------------PVRTC
           GLES3--------------ETC2/ASTC
