@@ -593,8 +593,8 @@ c) bit layout in bits 31 through 0 (in both cases)
 				pETC2Block->Decode(colorBlock);
 
 				//ETC2Block.Decode will cover alpha channel with 255, so call EACBlock.Decode after ETC2Block.Decode
-				//const EACBlock* pEACBlock = (EACBlock*)source;
-				//pEACBlock->Decode(colorBlock);
+				const EACBlock* pEACBlock = (EACBlock*)source;
+				pEACBlock->Decode(colorBlock);
 
 				for (uint32 y = 0; y < 4; ++y)
 				{
