@@ -1,5 +1,5 @@
 #pragma once
-
+#include <string>
 namespace TT
 {
 	typedef unsigned char    uint8;

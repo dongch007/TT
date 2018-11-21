@@ -7,5 +7,10 @@
     <ClInclude Include="Color.h" />
     <ClInclude Include="ETC.h" />
     <ClInclude Include="PVRTC.h" />
+    <ClInclude Include="ColorBlock.h" />
+    <ClInclude Include="Math.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ETC.cpp" />
   </ItemGroup>
 </Project>
