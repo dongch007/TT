@@ -333,14 +333,106 @@ c) bit layout in bits 31 through 0 (in both cases)
 
 		void DecodeTMode(ColorBlock& block) const
 		{
+			// Table C.8, distance index for T and H modes
+			const auto &tm = u.idht.mode.tm;
+
+			int r1 = extend_4to8bits(tm.TR1a << 2 | tm.TR1b);
+			int g1 = extend_4to8bits(tm.TG1);
+			int b1 = extend_4to8bits(tm.TB1);
+			int r2 = extend_4to8bits(tm.TR2);
+			int g2 = extend_4to8bits(tm.TG2);
+			int b2 = extend_4to8bits(tm.TB2);
+
+			static int distance[8] = { 3, 6, 11, 16, 23, 32, 41, 64 };
+			const int d = distance[tm.Tda << 1 | tm.Tdb];
+
+			 ColorRGBA8 paintColors[4] = {
+				ColorRGBA8(r1, g1, b1, 255),
+				ColorRGBA8(ClampUint8Right(r2 + d), ClampUint8Right(g2 + d), ClampUint8Right(b2 + d), 255),
+				ColorRGBA8(r2, g2, b2, 255),
+				ColorRGBA8(ClampUint8Left(r2 - d), ClampUint8Left(g2 - d), ClampUint8Left(b2 - d), 255),
+			};
+
+
+			for (int j = 0; j < 4; j++)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					block.color(i, j) = paintColors[getIndex(i, j)];
+				}
+			}
 		}
 
 		void DecodeHMode(ColorBlock& block) const
 		{
+			// Table C.8, distance index for T and H modes
+			const auto &hm = u.idht.mode.hm;
+
+			int r1 = extend_4to8bits(hm.HR1);
+			int g1 = extend_4to8bits(hm.HG1a << 1 | hm.HG1b);
+			int b1 = extend_4to8bits(hm.HB1a << 3 | hm.HB1b << 1 | hm.HB1c);
+			int r2 = extend_4to8bits(hm.HR2);
+			int g2 = extend_4to8bits(hm.HG2a << 1 | hm.HG2b);
+			int b2 = extend_4to8bits(hm.HB2);
+
+			static const int distance[8] = { 3, 6, 11, 16, 23, 32, 41, 64 };
+			const int orderingTrickBit =
+				((r1 << 16 | g1 << 8 | b1) >= (r2 << 16 | g2 << 8 | b2) ? 1 : 0);
+			const int d = distance[(hm.Hda << 2) | (hm.Hdb << 1) | orderingTrickBit];
+
+			const ColorRGBA8 paintColors[4] = {
+				ColorRGBA8(ClampUint8Right(r1 + d), ClampUint8Right(g1 + d), ClampUint8Right(b1 + d), 255),
+				ColorRGBA8(ClampUint8Left(r1 - d), ClampUint8Left(g1 - d), ClampUint8Left(b1 - d), 255),
+				ColorRGBA8(ClampUint8Right(r2 + d), ClampUint8Right(g2 + d), ClampUint8Right(b2 + d), 255),
+				ColorRGBA8(ClampUint8Left(r2 - d), ClampUint8Left(g2 - d), ClampUint8Left(b2 - d), 255),
+			};
+
+			for (int j = 0; j < 4; j++)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					block.color(i, j) = paintColors[getIndex(i, j)];
+				}
+			}
 		}
 
 		void DecodePlanarMode(ColorBlock& block) const
 		{
+			int ro = extend_6to8bits(u.pblk.RO);
+			int go = extend_7to8bits(u.pblk.GO1 << 6 | u.pblk.GO2);
+			int bo = extend_6to8bits(u.pblk.BO1 << 5 | u.pblk.BO2 << 3 | u.pblk.BO3a << 1 | u.pblk.BO3b);
+			int rh = extend_6to8bits(u.pblk.RH1 << 1 | u.pblk.RH2);
+			int gh = extend_7to8bits(u.pblk.GH);
+			int bh = extend_6to8bits(u.pblk.BHa << 5 | u.pblk.BHb);
+			int rv = extend_6to8bits(u.pblk.RVa << 3 | u.pblk.RVb);
+			int gv = extend_7to8bits(u.pblk.GVa << 2 | u.pblk.GVb);
+			int bv = extend_6to8bits(u.pblk.BV);
+
+			int rvo = rv - ro;
+			int gvo = gv - go;
+			int bvo = bv - bo;
+
+			int rho = rh - ro;
+			int gho = gh - go;
+			int bho = bh - bo;
+
+			for (int j = 0; j < 4; j++)
+			{
+				int ry = j * rvo + 2;
+				int gy = j * gvo + 2;
+				int by = j * bvo + 2;
+
+				for (int i = 0; i < 4; i++)
+				{
+					ColorRGBA8& color = block.color(i, j);
+					//color.r = ClampUint8((i*(rh - ro) + j * (rv - ro) + 2) >> 2 + ro);
+					//color.g = ClampUint8((i*(gh - go) + j * (gv - go) + 2) >> 2 + ro);
+					//color.b = ClampUint8((i*(bh - bo) + j * (bv - ro) + 2) >> 2 + ro);
+					color.r = ClampUint8(((i*rho + ry) >> 2) + ro);
+					color.g = ClampUint8(((i*gho + gy) >> 2) + go);
+					color.b = ClampUint8(((i*bho + by) >> 2) + bo);
+				}
+			}
 		}
 	};
 
@@ -497,12 +589,12 @@ c) bit layout in bits 31 through 0 (in both cases)
 		{
 			for (uint32 bx = 0; bx < bw; ++bx)
 			{
-				const ETC2Block* pETC2Block = (ETC2Block*)(source+16);
+				const ETC2Block* pETC2Block = (ETC2Block*)(source+8);
 				pETC2Block->Decode(colorBlock);
 
 				//ETC2Block.Decode will cover alpha channel with 255, so call EACBlock.Decode after ETC2Block.Decode
-				const EACBlock* pEACBlock = (EACBlock*)source;
-				pEACBlock->Decode(colorBlock);
+				//const EACBlock* pEACBlock = (EACBlock*)source;
+				//pEACBlock->Decode(colorBlock);
 
 				for (uint32 y = 0; y < 4; ++y)
 				{

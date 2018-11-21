@@ -5,10 +5,26 @@ namespace TT
 	inline uint8 ClampUint8(int32 x)
 	{
 		if (x < 0)
-			x = 0;
+			return 0;
 
 		if (x > 255)
-			x = 255;
+			return 255;
+
+		return x;
+	}
+
+	inline uint8 ClampUint8Left(int32 x)
+	{
+		if (x < 0)
+			return 0;
+
+		return x;
+	}
+
+	inline uint8 ClampUint8Right(int32 x)
+	{
+		if (x > 255)
+			return 255;
 
 		return x;
 	}
