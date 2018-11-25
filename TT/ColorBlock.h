@@ -7,10 +7,10 @@ namespace TT
 	public:
 		ColorBlock() {}
 
-		ColorRGBA8 color(uint32 i) const
-		{
-			return m_color[i];
-		}
+		//ColorRGBA8 color(uint32 i) const
+		//{
+		//	return m_color[i];
+		//}
 
 		ColorRGBA8& color(uint32 i)
 		{

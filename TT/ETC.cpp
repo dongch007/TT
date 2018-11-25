@@ -492,6 +492,28 @@ c) bit layout in bits 31 through 0 (in both cases)
 				uint8 mo : 3;
 				uint8 mn2 : 2;
 			};
+			/*struct
+			{
+				uint64 base_codeword : 4;
+				uint64 table_index : 4;
+				uint64 multiplier : 4;
+				uint64 a : 3;
+				uint64 b : 3;
+				uint64 c : 3;
+				uint64 d : 3;
+				uint64 e : 3;
+				uint64 f : 3;
+				uint64 g : 3;
+				uint64 h : 3;
+				uint64 i : 3;
+				uint64 j : 3;
+				uint64 k : 2;
+				uint64 l : 3;
+				uint64 m : 3;
+				uint64 n : 3;
+				uint64 o : 3;
+				uint64 p : 3;
+			};*/
 		};
 	public:
 		void Decode(ColorBlock& block) const
@@ -513,13 +535,35 @@ c) bit layout in bits 31 through 0 (in both cases)
 			index_array[13] = mn1 << 2 | mn2;
 			index_array[14] = mo;
 			index_array[15] = mp;
+
+			//index_array[0] = a;
+			//index_array[1] = b;
+			//index_array[2] = c;
+			//index_array[3] = d;
+			//index_array[4] = e;
+			//index_array[5] = f;
+			//index_array[6] = g;
+			//index_array[7] = h;
+			//index_array[8] = i;
+			//index_array[9] = j;
+			//index_array[10] = k;
+			//index_array[11] = l;
+			//index_array[12] = m;
+			//index_array[13] = n;
+			//index_array[14] = o;
+			//index_array[15] = p;
 			
 			for (int j = 0; j < 4; j++)
 			{
 				for (int i = 0; i < 4; i++)
 				{
 					ColorRGBA8& col = block.color(i, j);
+					//col.a = multiplier;
+					//col.a = base_codeword.us;
 					col.a = ClampUint8(base_codeword.us + multiplier * intensityModifierAlpha[table_index][index_array[i*4+j]]);
+					//col.a = ClampUint8(base_codeword.us + intensityModifierAlpha[i][index_array[j]]);
+					//col.a = index_array[j];
+					//col.a = ClampUint8(base_codeword + multiplier * intensityModifierAlpha[table_index][index_array[i * 4 + j]]);
 				}
 			}
 		}
@@ -602,6 +646,12 @@ c) bit layout in bits 31 through 0 (in both cases)
 					{
 						uint32 index = (4 * by + y)*width + (4 * bx + x);
 						memcpy(&dest[index * 4], &colorBlock.color(x, y), sizeof(ColorRGBA8));
+						//ColorRGBA8& col = colorBlock.color(y * 4 + x);
+						//dest[index] = colorBlock.color(y*4+x).dwColor;
+						//dest[index] = col.r;
+						//dest[index+1] = col.g;
+						//dest[index+2] = col.b;
+						//dest[index+3] = col.a;
 					}
 				}
 

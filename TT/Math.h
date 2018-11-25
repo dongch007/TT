@@ -39,8 +39,8 @@ namespace TT
 		return x;
 	}
 
-	int32 extend_4to8bits(int32 x) { return (x << 4) | x; }
-	int32 extend_5to8bits(int32 x) { return (x << 3) | (x >> 2); }
-	int32 extend_6to8bits(int32 x) { return (x << 2) | (x >> 4); }
-	int32 extend_7to8bits(int32 x) { return (x << 1) | (x >> 6); }
+	inline int32 extend_4to8bits(int32 x) { return (x << 4) | x; }
+	inline int32 extend_5to8bits(int32 x) { return (x << 3) | (x >> 2); }
+	inline int32 extend_6to8bits(int32 x) { return (x << 2) | (x >> 4); }
+	inline int32 extend_7to8bits(int32 x) { return (x << 1) | (x >> 6); }
 }
