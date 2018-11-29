@@ -7,6 +7,7 @@ namespace TT
 		return a > b ? a : b;
 	}
 
+	//todo test return uint32?
 	inline uint8 ClampUint8(int32 n)
 	{
 		if (n < 0)
@@ -16,11 +17,6 @@ namespace TT
 			return 255;
 
 		return n;
-
-		//after test above is faster......
-		//https://codereview.stackexchange.com/questions/6502/fastest-way-to-clamp-an-integer-to-the-range-0-255
-		//n &= -(n >= 0);
-		//return n | ((255 - n) >> 31);
 	}
 
 	inline uint8 ClampUint8Left(int32 n)

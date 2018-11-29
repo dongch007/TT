@@ -205,19 +205,75 @@ c) bit layout in bits 31 through 0 (in both cases)
 				uint8 BV : 6;
 				uint8 GVb : 2;
 			} pblk;
-			uint64 data;
+			struct
+			{
+				uint32 part0;
+				uint32 part1;
+			};
 		} u;
 
 	public:
-		void Decode(uint8* dest, uint32 destRowPitch) const
+		void Decode1(uint8* dest, uint32 destRowPitch) const
 		{
 			// Select mode
-			if (u.idht.mode.idm.diffbit)
+			//uint32 diff = (u.part0 >> 24) & 0x2;
+			//if (diff)
+			if(u.idht.mode.idm.diffbit)
 			{
+				//int32  R = (u.part0 >> 3) & 0x1F;
+				//int32 dR = ((u.part0 & 0x7) << 29) >> 29;
+				//int32  G = (u.part0 >> 11) & 0x1F;
+				//int32 dG = (((u.part0 >> 8) & 0x7) << 29) >> 29;
+				//int32  B = (u.part0 >> 19) & 0x1F;
+				//int32 dB = (((u.part0 >> 16) & 0x7) << 29) >> 29;
+				//int32 r = (R + dR);
+				//int32 g = (G + dG);
+				//int32 b = (B + dB);
 				const auto &diff = u.idht.mode.idm.colors.diff;
 				int r = (diff.R + diff.dR);
 				int g = (diff.G + diff.dG);
 				int b = (diff.B + diff.dB);
+
+				if (r < 0 || r > 31)
+				{
+					//DecodeTMode(dest, destRowPitch);
+				}
+				else if (g < 0 || g > 31)
+				{
+					//DecodeHMode(dest, destRowPitch);
+				}
+				else if (b < 0 || b > 31)
+				{
+					//DecodePlanarMode(dest, destRowPitch);
+				}
+				else
+				{
+					DecodeDifferentialMode(dest, destRowPitch, diff.R, diff.G, diff.B, r, g, b);
+				}
+			}
+			else
+			{
+				//DecodeIndividualMode(dest, destRowPitch);
+			}
+		}
+
+		void Decode(uint8* dest, uint32 destRowPitch) const
+		{
+			// Select mode
+			uint32 diff = (u.part0 >> 24) & 0x2;
+			if (diff)
+			{
+				const auto &diff = u.idht.mode.idm.colors.diff;
+				int32  R = (u.part0 >> 3) & 0x1F;
+				int32 dR = ((int)(u.part0 & 0x7) << 29) >> 29;
+				int32  G = (u.part0 >> 11) & 0x1F;
+				int32 dG = ((int)((u.part0 >> 8) & 0x7) << 29) >> 29;
+				int32  B = (u.part0 >> 19) & 0x1F;
+				int32 dB = ((int)((u.part0 >> 16) & 0x7) << 29) >> 29;
+				int32 r = (R + dR);
+				int32 g = (G + dG);
+				int32 b = (B + dB);
+
 				if (r < 0 || r > 31)
 				{
 					DecodeTMode(dest, destRowPitch);
@@ -232,7 +288,7 @@ c) bit layout in bits 31 through 0 (in both cases)
 				}
 				else
 				{
-					DecodeDifferentialMode(dest, destRowPitch);
+					DecodeDifferentialMode(dest, destRowPitch, R, G, B, r, g, b);
 				}
 			}
 			else
@@ -253,83 +309,182 @@ c) bit layout in bits 31 through 0 (in both cases)
 			DecodeIndividualOrDifferentialMode(dest, destRowPitch, r1, g1, b1, r2, g2, b2);
 		}
 
-		void DecodeDifferentialMode(uint8* dest, uint32 destRowPitch) const
+		//void DecodeIndividualMode1(uint8* dest, uint32 destRowPitch) const
+		//{
+		//	int r1 = extend_4to8bits((u.part0 >> 4) & 0xF);
+		//	int r2 = extend_4to8bits(u.part0 & 0xF);
+		//	int g1 = extend_4to8bits((u.part0 >> 12) & 0xF);
+		//	int g2 = extend_4to8bits((u.part0 >> 8) & 0xF);
+		//	int b1 = extend_4to8bits((u.part0 >> 20) & 0xF);
+		//	int b2 = extend_4to8bits((u.part0 >> 16) & 0xF);
+		//	DecodeIndividualOrDifferentialMode(dest, destRowPitch, r1, g1, b1, r2, g2, b2);
+		//}
+
+		inline void DecodeDifferentialMode(uint8* dest, uint32 destRowPitch, int R, int G, int B, int r, int g, int b) const
 		{
-			const auto &diff = u.idht.mode.idm.colors.diff;
-			int r1 = extend_5to8bits(diff.R);
-			int g1 = extend_5to8bits(diff.G);
-			int b1 = extend_5to8bits(diff.B);
-			int r2 = extend_5to8bits(diff.R + diff.dR);
-			int g2 = extend_5to8bits(diff.G + diff.dG);
-			int b2 = extend_5to8bits(diff.B + diff.dB);
+			int r1 = extend_5to8bits(R);
+			int g1 = extend_5to8bits(G);
+			int b1 = extend_5to8bits(B);
+			int r2 = extend_5to8bits(r);
+			int g2 = extend_5to8bits(g);
+			int b2 = extend_5to8bits(b);
 			DecodeIndividualOrDifferentialMode(dest, destRowPitch, r1, g1, b1, r2, g2, b2);
 		}
 
-		uint32 getIndex(uint32 x, uint32 y) const
+		//uint32 getIndex(uint32 x, uint32 y) const
+		//{
+		//	uint32 bitIndex = x * 4 + y;
+		//	uint32 bitOffset = bitIndex & 7;
+		//	uint32 lsb = (u.idht.pixelIndexLSB[1 - (bitIndex >> 3)] >> bitOffset) & 1;
+		//	uint32 msb = (u.idht.pixelIndexMSB[1 - (bitIndex >> 3)] >> bitOffset) & 1;
+		//	return (msb << 1) | lsb;
+		//}
+		inline uint32 getIndex(uint32 x, uint32 y) const
 		{
 			uint32 bitIndex = x * 4 + y;
 			uint32 bitOffset = bitIndex & 7;
+#ifdef __EMSCRIPTEN__
+			uint32 lsb = ((u.part1 >> (16 + 8 * (1 - (bitIndex >> 3)))) >> bitOffset) & 0x1;
+			uint32 msb = ((u.part1 >> (8 * (1 - (bitIndex >> 3)))) >> bitOffset) & 0x1;
+			return (msb << 1) | lsb;
+#else
 			uint32 lsb = (u.idht.pixelIndexLSB[1 - (bitIndex >> 3)] >> bitOffset) & 1;
 			uint32 msb = (u.idht.pixelIndexMSB[1 - (bitIndex >> 3)] >> bitOffset) & 1;
 			return (msb << 1) | lsb;
+#endif
 		}
+
+		//void DecodeIndividualOrDifferentialMode1(uint8* dest, uint32 destRowPitch, int r1, int g1, int b1, int r2, int g2, int b2) const
+		//{
+		//	static ColorRGBA8 subblockColors0[4];
+		//	static ColorRGBA8 subblockColors1[4];
+		//	for (uint32 modifierIdx = 0; modifierIdx < 4; modifierIdx++)
+		//	{
+		//		const int32 i1 = intensityModifierDefault[u.idht.mode.idm.cw1][modifierIdx];
+		//		ColorRGBA8& c0 = subblockColors0[modifierIdx];
+		//		c0.r = ClampUint8(r1 + i1);
+		//		c0.g = ClampUint8(g1 + i1);
+		//		c0.b = ClampUint8(b1 + i1);
+
+		//		const int32 i2 = intensityModifierDefault[u.idht.mode.idm.cw2][modifierIdx];
+		//		ColorRGBA8& c1 = subblockColors1[modifierIdx];
+		//		c1.r = ClampUint8(r2 + i2);
+		//		c1.g = ClampUint8(g2 + i2);
+		//		c1.b = ClampUint8(b2 + i2);
+		//	}
+
+		//	if (u.idht.mode.idm.flipbit)
+		//	{
+		//		//Two 4x2-pixel subblocks on top of each other
+		//		for (uint32 j = 0; j < 2; j++)
+		//		{
+		//			for (uint32 i = 0; i < 4; i++)
+		//			{
+		//				uint32 index = j * destRowPitch + i * 4;
+		//				*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+		//			}
+		//		}
+		//		for (uint32 j = 2; j < 4; j++)
+		//		{
+		//			for (uint32 i = 0; i < 4; i++)
+		//			{
+		//				uint32 index = j * destRowPitch + i * 4;
+		//				*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+		//			}
+		//		}
+		//	}
+		//	else
+		//	{
+		//		//Two 2x4-pixel subblocks side-by-side
+		//		for (uint32 j = 0; j < 4; j++)
+		//		{
+		//			for (uint32 i = 0; i < 2; i++)
+		//			{
+		//				uint32 index = j * destRowPitch + i * 4;
+		//				*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+		//			}
+		//		}
+		//		for (uint32 j = 0; j < 4; j++)
+		//		{
+		//			for (uint32 i = 2; i < 4; i++)
+		//			{
+		//				uint32 index = j * destRowPitch + i * 4;
+		//				*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+		//			}
+		//		}
+		//	}
+		//}
 
 		void DecodeIndividualOrDifferentialMode(uint8* dest, uint32 destRowPitch, int r1, int g1, int b1, int r2, int g2, int b2) const
 		{
-			static ColorRGBA8 subblockColors0[4];
-			static ColorRGBA8 subblockColors1[4];
-			for (int modifierIdx = 0; modifierIdx < 4; modifierIdx++)
-			{
-				const int i1 = intensityModifierDefault[u.idht.mode.idm.cw1][modifierIdx];
-				ColorRGBA8& c0 = subblockColors0[modifierIdx];
-				c0.r = ClampUint8(r1 + i1);
-				c0.g = ClampUint8(g1 + i1);
-				c0.b = ClampUint8(b1 + i1);
+			//ColorRGBA8 subblockColors0[4];
+			//ColorRGBA8 subblockColors1[4];
+			//const auto tableIdx1 = u.idht.mode.idm.cw1;
+			//const auto tableIdx2 = u.idht.mode.idm.cw2;
 
-				const int i2 = intensityModifierDefault[u.idht.mode.idm.cw2][modifierIdx];
-				ColorRGBA8& c1 = subblockColors1[modifierIdx];
-				c1.r = ClampUint8(r2 + i2);
-				c1.g = ClampUint8(g2 + i2);
-				c1.b = ClampUint8(b2 + i2);
+			uint32 subblockColors0[4];
+			uint32 subblockColors1[4];
+			uint32 tableIdx1 = (u.part0 >> 29) & 0x7;
+			uint32 tableIdx2 = (u.part0 >> 26) & 0x7;
+
+			for (uint32 modifierIdx = 0; modifierIdx < 4; modifierIdx++)
+			{
+				const int32 i1 = intensityModifierDefault[tableIdx1][modifierIdx];
+				//ColorRGBA8& c0 = subblockColors0[modifierIdx];
+				//c0.r = ClampUint8(r1 + i1);
+				//c0.g = ClampUint8(g1 + i1);
+				//c0.b = ClampUint8(b1 + i1);
+				//c0.dwColor = ClampUint8(r1 + i1) | (ClampUint8(g1 + i1) << 8) | (ClampUint8(b1 + i1) << 16) | 0xFF000000;
+				subblockColors0[modifierIdx] = ClampUint8(r1 + i1) | (ClampUint8(g1 + i1) << 8) | (ClampUint8(b1 + i1) << 16) | 0xFF000000;
+
+				const int32 i2 = intensityModifierDefault[tableIdx2][modifierIdx];
+				//ColorRGBA8& c1 = subblockColors1[modifierIdx];
+				//c1.r = ClampUint8(r2 + i2);
+				//c1.g = ClampUint8(g2 + i2);
+				//c1.b = ClampUint8(b2 + i2);
+				//c1.dwColor = ClampUint8(r2 + i2) | (ClampUint8(g2 + i2) << 8) | (ClampUint8(b2 + i2) << 16) | 0xFF000000;
+				subblockColors1[modifierIdx] = ClampUint8(r2 + i2) | (ClampUint8(g2 + i2) << 8) | (ClampUint8(b2 + i2) << 16) | 0xFF000000;
 			}
 
-			if (u.idht.mode.idm.flipbit)
+			uint32 flip = (u.part0 >> 24) & 0x1;
+			if (flip)
+			//if (u.idht.mode.idm.flipbit)
 			{
 				//Two 4x2-pixel subblocks on top of each other
-				for (int j = 0; j < 2; j++)
+				for (uint32 j = 0; j < 2; j++)
 				{
-					for (int i = 0; i < 4; i++)
+					for (uint32 i = 0; i < 4; i++)
 					{
-						int index = j * destRowPitch + i * 4;
-						*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+						const uint32 destIndex = j * destRowPitch + i * 4;
+						*(uint32*)(dest + destIndex) = subblockColors0[getIndex(i, j)];
 					}
 				}
-				for (int j = 2; j < 4; j++)
+				for (uint32 j = 2; j < 4; j++)
 				{
-					for (int i = 0; i < 4; i++)
+					for (uint32 i = 0; i < 4; i++)
 					{
-						int index = j * destRowPitch + i * 4;
-						*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+						const uint32 destIndex = j * destRowPitch + i * 4;
+						*(uint32*)(dest + destIndex) = subblockColors0[getIndex(i, j)];
 					}
 				}
 			}
 			else
 			{
 				//Two 2x4-pixel subblocks side-by-side
-				for (int j = 0; j < 4; j++)
+				for (uint32 j = 0; j < 4; j++)
 				{
-					for (int i = 0; i < 2; i++)
+					for (uint32 i = 0; i < 2; i++)
 					{
-						int index = j * destRowPitch + i * 4;
-						*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+						const uint32 destIndex = j * destRowPitch + i * 4;
+						*(uint32*)(dest + destIndex) = subblockColors0[getIndex(i, j)];
 					}
 				}
-				for (int j = 0; j < 4; j++)
+				for (uint32 j = 0; j < 4; j++)
 				{
-					for (int i = 2; i < 4; i++)
+					for (uint32 i = 2; i < 4; i++)
 					{
-						int index = j * destRowPitch + i * 4;
-						*(uint32*)(dest + index) = subblockColors0[getIndex(i, j)].dwColor;
+						const uint32 destIndex = j * destRowPitch + i * 4;
+						*(uint32*)(dest + destIndex) = subblockColors0[getIndex(i, j)];
 					}
 				}
 			}
@@ -350,6 +505,24 @@ c) bit layout in bits 31 through 0 (in both cases)
 			static int distance[8] = { 3, 6, 11, 16, 23, 32, 41, 64 };
 			const int d = distance[tm.Tda << 1 | tm.Tdb];
 
+#ifdef __EMSCRIPTEN__
+			 uint32 paintColors[4] = {
+				r1 | g1<<8 | b1<<16 | 0xFF000000,
+				ClampUint8Right(r2 + d) | ClampUint8Right(g2 + d) << 8 | ClampUint8Right(b2 + d) << 16 | 0xFF000000,
+				r2 | g2 << 8 | b2 << 16 | 0xFF000000,
+				ClampUint8Left(r2 - d) | ClampUint8Left(g2 - d) << 8 | ClampUint8Left(b2 - d) << 16 | 0xFF000000,
+			};
+
+
+			for (uint32 j = 0; j < 4; j++)
+			{
+				for (uint32 i = 0; i < 4; i++)
+				{
+					uint32 destIndex = j * destRowPitch + i * 4;
+					*(uint32*)(dest+ destIndex) = paintColors[getIndex(i, j)];
+				}
+			}
+#else
 			 ColorRGBA8 paintColors[4] = {
 				ColorRGBA8(r1, g1, b1, 255),
 				ColorRGBA8(ClampUint8Right(r2 + d), ClampUint8Right(g2 + d), ClampUint8Right(b2 + d), 255),
@@ -357,15 +530,15 @@ c) bit layout in bits 31 through 0 (in both cases)
 				ColorRGBA8(ClampUint8Left(r2 - d), ClampUint8Left(g2 - d), ClampUint8Left(b2 - d), 255),
 			};
 
-
-			for (int j = 0; j < 4; j++)
+			for (uint32 j = 0; j < 4; j++)
 			{
-				for (int i = 0; i < 4; i++)
+				for (uint32 i = 0; i < 4; i++)
 				{
-					int index = j * destRowPitch + i * 4;
-					*(uint32*)(dest+index) = paintColors[getIndex(i, j)].dwColor;
+					uint32 destIndex = j * destRowPitch + i * 4;
+					*(uint32*)(dest+ destIndex) = paintColors[i].dwColor;
 				}
 			}
+#endif
 		}
 
 		void DecodeHMode(uint8* dest, uint32 destRowPitch) const
@@ -385,6 +558,23 @@ c) bit layout in bits 31 through 0 (in both cases)
 				((r1 << 16 | g1 << 8 | b1) >= (r2 << 16 | g2 << 8 | b2) ? 1 : 0);
 			const int d = distance[(hm.Hda << 2) | (hm.Hdb << 1) | orderingTrickBit];
 
+#ifdef __EMSCRIPTEN__
+			uint32 paintColors[4] = {
+				ClampUint8Right(r1 + d) | ClampUint8Right(g1 + d) << 8 | ClampUint8Right(b1 + d) << 16 | 0xFF000000,
+				ClampUint8Left(r1 - d) | ClampUint8Left(g1 - d) << 8 | ClampUint8Left(b1 - d) << 16 | 0xFF000000,
+				ClampUint8Right(r2 + d) | ClampUint8Right(g2 + d) << 8 | ClampUint8Right(b2 + d) << 16 | 0xFF000000,
+				ClampUint8Left(r2 - d) | ClampUint8Left(g2 - d) << 8 | ClampUint8Left(b2 - d) << 16 | 0xFF000000,
+			};
+
+			for (uint32 j = 0; j < 4; j++)
+			{
+				for (uint32 i = 0; i < 4; i++)
+				{
+					uint32 destIndex = j * destRowPitch + i * 4;
+					*(uint32*)(dest + destIndex) = paintColors[getIndex(i, j)];
+				}
+			}
+#else
 			const ColorRGBA8 paintColors[4] = {
 				ColorRGBA8(ClampUint8Right(r1 + d), ClampUint8Right(g1 + d), ClampUint8Right(b1 + d), 255),
 				ColorRGBA8(ClampUint8Left(r1 - d), ClampUint8Left(g1 - d), ClampUint8Left(b1 - d), 255),
@@ -400,10 +590,40 @@ c) bit layout in bits 31 through 0 (in both cases)
 					*(uint32*)(dest + index) = paintColors[getIndex(i, j)].dwColor;
 				}
 			}
+#endif
 		}
 
 		void DecodePlanarMode(uint8* dest, uint32 destRowPitch) const
 		{
+#ifdef __EMSCRIPTEN__
+			//need optimize
+			uint32 byte0 = u.part0 & 0xFF;
+			uint32 byte1 = (u.part0 >> 8) & 0xFF;
+			uint32 byte2 = (u.part0 >> 16) & 0xFF;
+			uint32 byte3 = (u.part0 >> 24) & 0xFF;
+			uint32 byte4 = u.part1 & 0xFF;
+			uint32 byte5 = (u.part1 >> 8) & 0xFF;
+			uint32 byte6 = (u.part1 >> 16) & 0xFF;
+			uint32 byte7 = (u.part1 >> 24) & 0xFF;
+			int ro = extend_6to8bits((byte0 >> 1) & 0x3F);
+			int gO1 = byte0 & 0x1;
+			int gO2 = (byte1 >> 1) & 0x3F;
+			int go = extend_7to8bits((gO1 << 6) | gO2);
+			int bO1 = byte1 & 0x1;
+			int bO2 = (byte2 >> 3) & 0x3;
+			int bO3 = ((byte2 & 0x3) << 1) | (byte3 >> 7);
+			int bo = extend_6to8bits(bO1 << 5 | bO2 << 3 | bO3);
+
+			int rH1 = (byte3 >> 2) & 0x1F;
+			int rH2 = byte3 & 0x1;
+			int rh = extend_6to8bits(rH1 << 1 | rH2);
+			int gh = extend_7to8bits(byte4 >> 1);
+			int bh = extend_6to8bits(((byte4 & 0x1) << 5) | (byte5 >> 3));
+
+			int rv = extend_6to8bits(((byte5 & 0x7) << 3) | (byte6 >> 5));
+			int gv = extend_7to8bits(((byte6 & 0x1F) << 2) | (byte7 >> 6));
+			int bv = extend_6to8bits(byte7 & 0x3F);
+#else
 			int ro = extend_6to8bits(u.pblk.RO);
 			int go = extend_7to8bits(u.pblk.GO1 << 6 | u.pblk.GO2);
 			int bo = extend_6to8bits(u.pblk.BO1 << 5 | u.pblk.BO2 << 3 | u.pblk.BO3a << 1 | u.pblk.BO3b);
@@ -413,6 +633,7 @@ c) bit layout in bits 31 through 0 (in both cases)
 			int rv = extend_6to8bits(u.pblk.RVa << 3 | u.pblk.RVb);
 			int gv = extend_7to8bits(u.pblk.GVa << 2 | u.pblk.GVb);
 			int bv = extend_6to8bits(u.pblk.BV);
+#endif
 
 			int rvo = rv - ro;
 			int gvo = gv - go;
@@ -430,8 +651,14 @@ c) bit layout in bits 31 through 0 (in both cases)
 
 				for (int i = 0; i < 4; i++)
 				{
-					int index = j * destRowPitch + i * 4;
-					ColorRGBA8& color = *(ColorRGBA8*)(dest+index);
+					int destIndex = j * destRowPitch + i * 4;
+#ifdef __EMSCRIPTEN__
+					uint32 r = ClampUint8(((i*rho + ry) >> 2) + ro);
+					uint32 g = ClampUint8(((i*gho + gy) >> 2) + go);
+					uint32 b = ClampUint8(((i*bho + by) >> 2) + bo);
+					*(uint32*)(dest + destIndex) = r | (g << 8) | (b << 16) | 0xFF000000;
+#else
+					ColorRGBA8& color = *(ColorRGBA8*)(dest + destIndex);
 					//color.r = ClampUint8((i*(rh - ro) + j * (rv - ro) + 2) >> 2 + ro);
 					//color.g = ClampUint8((i*(gh - go) + j * (gv - go) + 2) >> 2 + ro);
 					//color.b = ClampUint8((i*(bh - bo) + j * (bv - ro) + 2) >> 2 + ro);
@@ -439,6 +666,7 @@ c) bit layout in bits 31 through 0 (in both cases)
 					color.g = ClampUint8(((i*gho + gy) >> 2) + go);
 					color.b = ClampUint8(((i*bho + by) >> 2) + bo);
 					color.a = 255;
+#endif
 				}
 			}
 		}
@@ -564,9 +792,10 @@ c) bit layout in bits 31 through 0 (in both cases)
 				const ETC2Block* pETC2Block = (ETC2Block*)(source+8);
 				pETC2Block->Decode(dest + destOffset, destRowPitch);
 
+
 				//ETC2Block.Decode will cover alpha channel with 255, so call EACBlock.Decode after ETC2Block.Decode
-				//const EACBlock* pEACBlock = (EACBlock*)source;
-				//pEACBlock->Decode(dest + destOffset, destRowPitch);
+				const EACBlock* pEACBlock = (EACBlock*)source;
+				pEACBlock->Decode(dest + destOffset, destRowPitch);
 
 				source += 16;
 			}
