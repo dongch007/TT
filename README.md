@@ -18,4 +18,7 @@ emcc -O3 TT/ETC.cpp -s WASM=0 -s EXPORTED_FUNCTIONS="['_malloc', '_free', '_Tran
   Module._TranscodeETC2_EAC_to_RGBA8(sourcePtr, destPtr, width, height);
 
   let uncompressedData = new Uint8Array(Module.HEAPU8.buffer, destPtr, destSize);
+  
+  Module._free(sourcePtr);
+  Module._free(destPtr);
 ```
