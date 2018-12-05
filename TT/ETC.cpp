@@ -263,7 +263,6 @@ c) bit layout in bits 31 through 0 (in both cases)
 			uint32 diff = (u.part0 >> 24) & 0x2;
 			if (diff)
 			{
-				const auto &diff = u.idht.mode.idm.colors.diff;
 				int32  R = (u.part0 >> 3) & 0x1F;
 				int32 dR = ((int)(u.part0 & 0x7) << 29) >> 29;
 				int32  G = (u.part0 >> 11) & 0x1F;
@@ -448,7 +447,6 @@ c) bit layout in bits 31 through 0 (in both cases)
 
 			uint32 flip = (u.part0 >> 24) & 0x1;
 			if (flip)
-			//if (u.idht.mode.idm.flipbit)
 			{
 				//Two 4x2-pixel subblocks on top of each other
 				for (uint32 j = 0; j < 2; j++)
@@ -464,7 +462,7 @@ c) bit layout in bits 31 through 0 (in both cases)
 					for (uint32 i = 0; i < 4; i++)
 					{
 						const uint32 destIndex = j * destRowPitch + i * 4;
-						*(uint32*)(dest + destIndex) = subblockColors0[getIndex(i, j)];
+						*(uint32*)(dest + destIndex) = subblockColors1[getIndex(i, j)];
 					}
 				}
 			}
@@ -484,7 +482,7 @@ c) bit layout in bits 31 through 0 (in both cases)
 					for (uint32 i = 2; i < 4; i++)
 					{
 						const uint32 destIndex = j * destRowPitch + i * 4;
-						*(uint32*)(dest + destIndex) = subblockColors0[getIndex(i, j)];
+						*(uint32*)(dest + destIndex) = subblockColors1[getIndex(i, j)];
 					}
 				}
 			}
@@ -535,7 +533,7 @@ c) bit layout in bits 31 through 0 (in both cases)
 				for (uint32 i = 0; i < 4; i++)
 				{
 					uint32 destIndex = j * destRowPitch + i * 4;
-					*(uint32*)(dest+ destIndex) = paintColors[i].dwColor;
+					*(uint32*)(dest+ destIndex) = paintColors[getIndex(i, j)].dwColor;
 				}
 			}
 #endif
@@ -804,25 +802,25 @@ c) bit layout in bits 31 through 0 (in both cases)
 
 	void TranscodeETC2_EAC_to_RGBA81(const uint8* source, uint8* dest, const uint32 width, const uint32 height)
 	{
-		const uint32 bw = (width + 3) / 4;  //block width
-		const uint32 bh = (height + 3) / 4; //block height
+		//const uint32 bw = (width + 3) / 4;  //block width
+		//const uint32 bh = (height + 3) / 4; //block height
 
-		uint32 destRowPitch = Max(width * 4, 16);
-		for (uint32 by = 0; by < bh; ++by)
-		{
-			for (uint32 bx = 0; bx < bw; ++bx)
-			{
-				uint32 destOffset = by * 4 * destRowPitch + bx * 16;
+		//uint32 destRowPitch = Max(width * 4, 16);
+		//for (uint32 by = 0; by < bh; ++by)
+		//{
+		//	for (uint32 bx = 0; bx < bw; ++bx)
+		//	{
+		//		uint32 destOffset = by * 4 * destRowPitch + bx * 16;
 
-				const ETC2Block* pETC2Block = (ETC2Block*)(source+8);
-				pETC2Block->Decode(dest + destOffset, destRowPitch);
+		//		//ETC2Block.Decode will cover alpha channel with 255, so call EACBlock.Decode after ETC2Block.Decode
+		//		const EACBlock* pEACBlock = (EACBlock*)source;
+		//		pEACBlock->Decode(dest + destOffset, destRowPitch);
 
-				//ETC2Block.Decode will cover alpha channel with 255, so call EACBlock.Decode after ETC2Block.Decode
-				//const EACBlock* pEACBlock = (EACBlock*)source;
-				//pEACBlock->Decode(dest + destOffset, destRowPitch);
+		//		const ETC2Block* pETC2Block = (ETC2Block*)(source + 8);
+		//		pETC2Block->Decode(dest + destOffset, destRowPitch);
 
-				source += 16;
-			}
-		}
+		//		source += 16;
+		//	}
+		//}
 	}
 }

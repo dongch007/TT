@@ -2,6 +2,13 @@
 #include <string>
 namespace TT
 {
+#ifdef  _WIN32
+	#define TT_EXPORT __declspec(dllexport)
+#else
+	#define TT_EXPORT 
+#endif
+
+
 	typedef unsigned char       uint8;
 	typedef char		        int8;
 	typedef unsigned short      uint16;
