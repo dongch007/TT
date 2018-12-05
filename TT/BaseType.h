@@ -2,7 +2,7 @@
 #include <string>
 namespace TT
 {
-#ifdef  _WIN32
+#if defined _WIN32 || defined _WIN64
 	#define TT_EXPORT __declspec(dllexport)
 #else
 	#define TT_EXPORT 
