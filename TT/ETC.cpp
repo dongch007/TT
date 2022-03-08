@@ -799,28 +799,4 @@ c) bit layout in bits 31 through 0 (in both cases)
 			}
 		}
 	}
-
-	void TranscodeETC2_EAC_to_RGBA81(const uint8* source, uint8* dest, const uint32 width, const uint32 height)
-	{
-		//const uint32 bw = (width + 3) / 4;  //block width
-		//const uint32 bh = (height + 3) / 4; //block height
-
-		//uint32 destRowPitch = Max(width * 4, 16);
-		//for (uint32 by = 0; by < bh; ++by)
-		//{
-		//	for (uint32 bx = 0; bx < bw; ++bx)
-		//	{
-		//		uint32 destOffset = by * 4 * destRowPitch + bx * 16;
-
-		//		//ETC2Block.Decode will cover alpha channel with 255, so call EACBlock.Decode after ETC2Block.Decode
-		//		const EACBlock* pEACBlock = (EACBlock*)source;
-		//		pEACBlock->Decode(dest + destOffset, destRowPitch);
-
-		//		const ETC2Block* pETC2Block = (ETC2Block*)(source + 8);
-		//		pETC2Block->Decode(dest + destOffset, destRowPitch);
-
-		//		source += 16;
-		//	}
-		//}
-	}
 }

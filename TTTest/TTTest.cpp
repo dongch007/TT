@@ -18,30 +18,9 @@ void saveAsPNG(const char* file, uint8* data, uint32 width, uint32 height)
 	}
 }
 
-class ETC2Block
-{
-public:
-	union {
-		uint32 data;
-		struct
-		{
-			uint32 d0 : 6;
-			//uint8 d1 : 3;
-			uint32 d2 : 3;
-			uint32 d3 : 3;
-			uint32 d4 : 3;
-			uint32 d5 : 1;
-		};
-	};
-};
 
 int main()
 {
-	TT::ColorBlock block;
-	TT::ColorRGBA8 col(0xFF000000);
-	ETC2Block b;
-	b.data = 0x00FF;
-
 	FileReader reader("ground.ktx");
 
 	uint8 KtxIdentifier[12] = { 0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A };
