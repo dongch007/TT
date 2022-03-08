@@ -6,20 +6,24 @@ class FileReader
 {
 public:
 	explicit FileReader(const char* file)
-	: fp(NULL)
-	, buffer(NULL)
+	: fp(nullptr)
+	, buffer(nullptr)
 	, current(0)
+	, length(0)
 	{
 		fopen_s(&fp, file, "rb");
-		fseek(fp, 0L, SEEK_END);
-		length = ftell(fp);
-		buffer = new uint8[length];
+		if(fp != nullptr)
+		{
+			fseek(fp, 0L, SEEK_END);
+			length = ftell(fp);
+			buffer = new uint8[length];
 
-		fseek(fp, 0, SEEK_SET);
-		fread(buffer, length, 1, fp);
+			fseek(fp, 0, SEEK_SET);
+			fread(buffer, length, 1, fp);
 
-		fclose(fp);
-		fp = NULL;
+			fclose(fp);
+			fp = nullptr;
+		}
 	}
 	~FileReader()
 	{
